@@ -1,6 +1,6 @@
 #!/bin/bash
-if [[ -f scripts/param.sh ]]; then
-    . scripts/param.sh
+if [[ -f include/param.sh ]]; then
+    . include/param.sh
 else
     DISK_TYPE=""
     MACHINE_TYPE="n2d-hichgpu-16"
@@ -17,7 +17,7 @@ fi
 mapfile -t OUTPUT < <(gcloud beta compute instances create llama-cpp-1 \
     --machine-type=${MACHINE_TYPE} \
     --network-interface=network-tier=STANDARD,subnet=default \
-    --metadata-from-file=startup-script=scripts/startup.sh \
+    --metadata-from-file=startup-script=include/startup.sh \
     --no-restart-on-failure \
     --maintenance-policy=TERMINATE \
     --provisioning-model=SPOT \
