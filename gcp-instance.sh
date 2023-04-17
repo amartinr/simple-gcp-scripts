@@ -31,8 +31,8 @@ mapfile -t OUTPUT < <(gcloud beta compute instances create llama-cpp-1 \
     --labels=ec-src=vm_add-gcloud \
     --reservation-affinity=any ${GCLOUD_OPTS})
 
-if [[ -f scripts/autoconnect.sh ]]; then
-   . scripts/autoconnect.sh
+if [[ -f include/autoconnect.sh ]]; then
+   . include/autoconnect.sh
 else
    printf "${OUTPUT[0]}\n"
    for i in "${OUTPUT[@]:1}"; do
