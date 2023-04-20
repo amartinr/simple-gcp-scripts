@@ -3,7 +3,7 @@ if [[ -f include/param.sh ]]; then
     . include/param.sh
 else
     DISK_TYPE=""
-    DISk_SIZE=30
+    DISK_SIZE=30
     MACHINE_TYPE="n2d-hichgpu-16"
 fi
 
