@@ -6,7 +6,7 @@ if [ -L "${BP_DISK_DEV}" ]; then
     mkdir /mnt/{hub,models}
     chown 1000.1001 /mnt/hub
     chown 1000.1001 /mnt/models
-    mount -o bind /mnt/models /home/amartinr/llama.cpp/models
+#    mount -o bind /mnt/models /home/amartinr/llama.cpp/models
 fi
 exit 0
 
