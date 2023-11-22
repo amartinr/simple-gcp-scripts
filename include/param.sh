@@ -1,6 +1,6 @@
 usage() {
     cat <<EOF
-Usage: $0 [-t|--type=<machine-type>] [-d|--disk[=][standard|balanced]]
+Usage: $0 [-m|--machine=<machine-type>] [-d|--disk[=][standard|balanced]] [-s|--disk-size=<disk size in GB>] [-g|--gpu[=][k80|t4]] 
 EOF
 }
 log() { printf '%s\n' "$*"; }
