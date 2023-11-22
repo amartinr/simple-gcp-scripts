@@ -23,7 +23,8 @@ case $GPU_TYPE in
 esac
 
 if [ -n "$GPU_TYPE" ]; then
-    GCLOUD_OPTS="${GCLOUD_OPTS} --accelerator=count=1,type=$GPU_TYPE"
+    GCLOUD_OPTS="${GCLOUD_OPTS} \
+        --accelerator=count=1,type=$GPU_TYPE"
     if [[ ! "$MACHINE_TYPE" =~ "^n1-" ]]; then
         printf "$MACHINE_TYPE not compatible with GPU acceleration.\n"
         printf "Selecting 'n1-highmem-4' as instance type.\n"
@@ -35,8 +36,13 @@ fi
 
 DISK_NAME=data-$(head -c2 </dev/urandom|xxd -p)
 if [ -n "$DISK_TYPE" ]; then
-    gcloud compute disks create $DISK_NAME --description="Data disk" --type=$DISK_TYPE --size=$DISK_SIZE --labels=protected=false,mode=rw,fs=ext4,boot=false
-    GCLOUD_OPTS="${GCLOUD_OPTS} --disk=auto-delete=yes,boot=no,name=${DISK_NAME},mode=rw"
+    gcloud compute disks create $DISK_NAME \
+        --description="Data disk" \
+        --type=$DISK_TYPE \
+        --size=$DISK_SIZE \
+        --labels=protected=false,mode=rw,fs=ext4,boot=false
+    GCLOUD_OPTS="${GCLOUD_OPTS} \
+        --disk=auto-delete=yes,boot=no,name=${DISK_NAME},mode=rw"
 fi
 
 # e2-micro is part of GCP free tier
