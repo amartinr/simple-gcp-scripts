@@ -1,39 +1,31 @@
 #!/bin/bash
-
-# compute instances
-#mapfile -t OUTPUT < <(gcloud compute instances list --format="csv[separator=',',no-heading](name,networkInterfaces[0].accessConfigs[0].natIP,status,machineType,scheduling.provisioningModel,creationTimestamp)")
-mapfile -t OUTPUT < <(gcloud compute instances list --format="table(name,networkInterfaces[0].accessConfigs[0].natIP,status,machineType,scheduling.provisioningModel,creationTimestamp)")
-HEADER=${OUTPUT[0]//CREATION_TIMESTAMP/LIFETIME (S)}
-
-printf "=== COMPUTE INSTANCES =============\n"
-if [[ -n "${OUTPUT[@]:1}" ]]; then
-    for i in "${OUTPUT[@]:1}"; do 
-        read NAME NATIP STATUS MACHINETYPE \
-             PROVISIONINGMODEL CREATION_TIMESTAMP <<< $i
-        LIFETIME=$(($(date +%s) - $(date -d $CREATION_TIMESTAMP +%s)))
-        LIFETIME_M=$(($LIFETIME / 60))
-        LIFETIME_H=$(($LIFETIME / 3600))
-    done
-    printf "$HEADER\n"
-    printf "${i//????-??-??T??:??:??*/$LIFETIME}\n"
-else
-    printf "No compute instances found.\n"
+TZ=America/Los_Angeles
+OUTPUT=$(gcloud compute instances list --format=json)
+if [[ $(echo "$OUTPUT" | jq 'length') -gt 0 ]]; then
+    echo "$OUTPUT" | jq -r --arg now $(TZ=America/Los_Angeles date +"%Y-%m-%dT%H:%M:%S%z") '.[] |
+    {
+        name,
+        kind,
+        IP: .networkInterfaces[0].accessConfigs[0].natIP,
+        status,
+        zone: (.zone | split("/") | last),
+        type: (.machineType | split("/") | last),
+        accelerator: (if .guestAccelerators then (.guestAccelerators[0].acceleratorType | split("/") | last) else null end),
+        provision: .scheduling.provisioningModel,
+        lifetime: (($now | sub("(?<time>.*)\\.[\\d]{3}(?<tz>.*)"; "\(.time)\(.tz)") | strptime("%Y-%m-%dT%H:%M:%S%z") | mktime) - (.creationTimestamp | sub("(?<time>.*)\\.[\\d]{3}(?<tz>.*)"; "\(.time)\(.tz)") | strptime("%Y-%m-%dT%H:%M:%S%z") | mktime)) | tostring
+    }'
 fi
 
-# compute disks
-mapfile -t OUTPUT < <(gcloud compute disks list)
-HEADER=${OUTPUT[0]}
-
-printf "=== COMPUTE DISKS =================\n"
-if [[ -n "${OUTPUT[@]:1}" ]]; then
-    for i in "${OUTPUT[@]:1}"; do 
-        read NAME LOCATION LOCATION_SCOPE \
-             SIZE_GB TYPE STATUS <<< $i
-    done
-    printf "$HEADER\n"
-    for i in "${OUTPUT[@]:1}"; do 
-        printf "${i}\n"
-    done
+OUTPUT=$(gcloud compute disks list --format=json)
+if [[ $(echo "$OUTPUT" | jq 'length') -gt 0 ]]; then echo "$OUTPUT" | jq -r '.[] |
+        {
+            name,
+            kind,
+            zone: (.zone | split("/") | last),
+            type: (.type | split("/") | last),
+            sizeGb,
+            status
+        }'
 else
     printf "No compute disks found.\n"
 fi

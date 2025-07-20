@@ -20,6 +20,7 @@ if [[ -n "${OUTPUT[@]:1}" ]]; then
         done
         printf "\n"
 
-        exec ssh -o StrictHostKeyChecking=no $EXTERNAL_IP
+        #exec ssh -i ~/.ssh/id_rsa_gcp -o StrictHostKeyChecking=no $EXTERNAL_IP
+        exec ssh $EXTERNAL_IP
     fi
 fi

@@ -17,6 +17,7 @@ esac
 
 case $GPU_TYPE in
     t4|"") GPU_TYPE="nvidia-tesla-t4";;
+    p4) GPU_TYPE="nvidia-tesla-p4";;
     k80) GPU_TYPE="nvidia-tesla-k80";;
     none) GPU_TYPE="";;
     *) usage_fatal "invalid GPU type: '$GPU_TYPE'";;
@@ -25,13 +26,13 @@ esac
 if [ -n "$GPU_TYPE" ]; then
     GCLOUD_OPTS="${GCLOUD_OPTS} \
         --accelerator=count=1,type=$GPU_TYPE"
-    if [[ ! "$MACHINE_TYPE" =~ "^n1-" ]]; then
-        printf "$MACHINE_TYPE not compatible with GPU acceleration.\n"
-        printf "Selecting 'n1-highmem-4' as instance type.\n"
-        MACHINE_TYPE="n1-highmem-4";
-    fi
+    #if [[ ! "$MACHINE_TYPE" =~ "^n1-" ]]; then
+    #    printf "$MACHINE_TYPE not compatible with GPU acceleration.\n"
+    #    printf "Selecting 'n1-highmem-4' as instance type.\n"
+    #    MACHINE_TYPE="n1-highmem-4";
+    #fi
     # GPU instances need additional storage
-    DISK_TYPE="pd-balanced"
+    #DISK_TYPE="pd-balanced"
 fi
 
 DISK_NAME=data-$(head -c2 </dev/urandom|xxd -p)
