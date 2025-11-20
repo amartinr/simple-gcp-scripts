@@ -4,7 +4,7 @@ if [[ -f include/param.sh ]]; then
 else
     DISK_TYPE=""
     DISK_SIZE=30
-    MACHINE_TYPE="n2d-hichgpu-16"
+    MACHINE_TYPE="n2d-highcpu-16"
 fi
 
 MACHINE_TYPE=${MACHINE_TYPE:-"n2d-highcpu-16"}
