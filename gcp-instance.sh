@@ -4,13 +4,14 @@ if [[ -f include/param.sh ]]; then
 else
     DISK_TYPE=""
     DISK_SIZE=30
-    MACHINE_TYPE="n2d-highcpu-16"
+    MACHINE_TYPE="n2d-highgpu-16"
 fi
 
 MACHINE_TYPE=${MACHINE_TYPE:-"n2d-highcpu-16"}
 case $DISK_TYPE in
     standard|s|std|"") DISK_TYPE="pd-standard";;
     balanced|b|bal) DISK_TYPE="pd-balanced";;
+    ssd) DISK_TYPE="pd-ssd";;
     none) DISK_TYPE="";;
     *) usage_fatal "invalid disk type: '$DISK_TYPE'";;
 esac
