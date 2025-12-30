@@ -24,7 +24,8 @@ if [[ $(echo "$OUTPUT" | jq 'length') -gt 0 ]]; then echo "$OUTPUT" | jq -r '.[]
             zone: (.zone | split("/") | last),
             type: (.type | split("/") | last),
             sizeGb,
-            status
+            status,
+            labels
         }'
 else
     printf "No compute disks found.\n"

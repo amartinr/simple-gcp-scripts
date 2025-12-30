@@ -2,18 +2,20 @@
 if [[ -f include/param.sh ]]; then
     . include/param.sh
 else
-    DISK_TYPE=""
-    DISK_SIZE=30
-    MACHINE_TYPE="n2d-highgpu-16"
+    DATA_DISK_TYPE="none"
+    DATA_DATA_DISK_SIZE=30
+    MACHINE_TYPE="e2-micro"
 fi
 
-MACHINE_TYPE=${MACHINE_TYPE:-"n2d-highcpu-16"}
-case $DISK_TYPE in
-    standard|s|std|"") DISK_TYPE="pd-standard";;
-    balanced|b|bal) DISK_TYPE="pd-balanced";;
-    ssd) DISK_TYPE="pd-ssd";;
-    none) DISK_TYPE="";;
-    *) usage_fatal "invalid disk type: '$DISK_TYPE'";;
+SUFFIX=$(head -c2 </dev/urandom | xxd -p)
+
+MACHINE_TYPE=${MACHINE_TYPE:-"e2-micro"}
+case $DATA_DISK_TYPE in
+    standard|s|std|"") DATA_DISK_TYPE="pd-standard";;
+    balanced|b|bal) DATA_DISK_TYPE="pd-balanced";;
+    ssd) DATA_DISK_TYPE="pd-ssd";;
+    none) DATA_DISK_TYPE="";;
+    *) usage_fatal "invalid disk type: '$DATA_DISK_TYPE'";;
 esac
 
 case $GPU_TYPE in
@@ -33,18 +35,26 @@ if [ -n "$GPU_TYPE" ]; then
     #    MACHINE_TYPE="n1-highmem-4";
     #fi
     # GPU instances need additional storage
-    #DISK_TYPE="pd-balanced"
+    #DATA_DISK_TYPE="pd-balanced"
 fi
 
-DISK_NAME=data-$(head -c2 </dev/urandom|xxd -p)
-if [ -n "$DISK_TYPE" ]; then
-    gcloud compute disks create $DISK_NAME \
+if [ -n "$DATA_DISK_TYPE" ]; then
+    DATA_DISK_NAME=llama-data-${SUFFIX}
+    if [ "$DISK_PERSISTENT" = "false" ]; then
+        AUTO_DELETE="yes"
+        PROTECTED="false"
+    else
+        AUTO_DELETE="no"
+        PROTECTED="true"
+    fi
+    gcloud compute disks create $DATA_DISK_NAME \
         --description="Data disk" \
-        --type=$DISK_TYPE \
-        --size=$DISK_SIZE \
-        --labels=protected=false,mode=rw,fs=ext4,boot=false
+        --type=$DATA_DISK_TYPE \
+        --size=$DATA_DISK_SIZE \
+        --labels=protected=${PROTECTED},mode=rw,fs=ext4,boot=false \
+        --quiet
     GCLOUD_OPTS="${GCLOUD_OPTS} \
-        --disk=auto-delete=yes,boot=no,name=${DISK_NAME},mode=rw"
+        --disk=auto-delete=${AUTO_DELETE},boot=no,name=${DATA_DISK_NAME},mode=rw"
 fi
 
 # e2-micro is part of GCP free tier
@@ -55,13 +65,13 @@ if [ "$MACHINE_TYPE" != "e2-micro" ]; then
         --max-run-duration=4h"
 fi
 
-mapfile -t OUTPUT < <(gcloud beta compute instances create llama-cpp-$(head -c2 </dev/urandom|xxd -p) \
+mapfile -t OUTPUT < <(gcloud beta compute instances create llama-${SUFFIX} \
     --machine-type=${MACHINE_TYPE} \
     --network-interface=network-tier=STANDARD,subnet=default \
     --metadata-from-file=startup-script=include/startup.sh \
     --no-restart-on-failure \
     --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append \
-    --disk=auto-delete=no,boot=yes,name=test-1,mode=rw \
+    --disk=auto-delete=no,boot=yes,name=llama-boot,mode=rw \
     --no-shielded-secure-boot \
     --shielded-vtpm \
     --shielded-integrity-monitoring \
