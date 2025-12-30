@@ -15,25 +15,25 @@ else
 fi
 
 printf "=== COMPUTE DISKS =================\n"
-mapfile -t UNPROTECTED_DISKS < <(gcloud compute disks list --format="csv[no-heading](name,size_gb)" --filter=labels.protected=false)
+mapfile -t UNPROTECTED_DISKS < <(gcloud compute disks list --format="csv[no-heading](name,size_gb)" --filter="labels.protected=false AND labels.boot=false")
 if [[ -n $UNPROTECTED_DISKS ]]; then
     for i in "${UNPROTECTED_DISKS[@]}"; do
         NAME=${i%,*}
         SIZE=${i#*,}
-        echo "Deleting unprotected disk ${NAME} (${SIZE} GB)..."
+        echo "Deleting unprotected data disk ${NAME} (${SIZE} GB)..."
         gcloud -q compute disks delete ${NAME}
     done
 else
-    echo "No unprotected disks found"
+    echo "No unprotected data disks found"
 fi
 
-mapfile -t DISKS < <(gcloud compute disks list --format="csv[no-heading](name,size_gb)" --filter=labels.protected=true)
+mapfile -t DISKS < <(gcloud compute disks list --format="csv[no-heading](name,size_gb)" --filter="labels.protected=true OR labels.boot=true")
 if [[ -n $DISKS ]]; then
     for i in "${DISKS[@]}"; do
         NAME=${i%,*}
         SIZE=${i#*,}
-        echo "Not deleting protected disk ${NAME} (${SIZE} GB)"
+        echo "Not deleting disk ${NAME} (${SIZE} GB)"
     done
 else
-    echo "No protected disks found"
+    echo "No boot/protected disks found"
 fi
