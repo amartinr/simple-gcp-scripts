@@ -3,7 +3,7 @@ if [[ -f include/param.sh ]]; then
     . include/param.sh
 else
     DATA_DISK_TYPE="none"
-    DATA_DATA_DISK_SIZE=30
+    DATA_DISK_SIZE=30
     MACHINE_TYPE="e2-micro"
 fi
 
@@ -29,30 +29,37 @@ esac
 if [ -n "$GPU_TYPE" ]; then
     GCLOUD_OPTS="${GCLOUD_OPTS} \
         --accelerator=count=1,type=$GPU_TYPE"
-    #if [[ ! "$MACHINE_TYPE" =~ "^n1-" ]]; then
-    #    printf "$MACHINE_TYPE not compatible with GPU acceleration.\n"
-    #    printf "Selecting 'n1-highmem-4' as instance type.\n"
-    #    MACHINE_TYPE="n1-highmem-4";
-    #fi
-    # GPU instances need additional storage
-    #DATA_DISK_TYPE="pd-balanced"
 fi
 
 if [ -n "$DATA_DISK_TYPE" ]; then
-    DATA_DISK_NAME=llama-data-${SUFFIX}
-    if [ "$DISK_PERSISTENT" = "false" ]; then
-        AUTO_DELETE="yes"
-        PROTECTED="false"
-    else
+    # Buscar disco persistente existente
+    EXISTING_DISK=$(gcloud compute disks list \
+        --filter="labels.protected=true AND labels.boot=false AND -users:*" \
+        --format="value(name)" \
+        --limit=1)
+
+    if [ -n "$EXISTING_DISK" ]; then
+        echo "Found existing protected data disk: ${EXISTING_DISK}"
+        DATA_DISK_NAME=$EXISTING_DISK
         AUTO_DELETE="no"
-        PROTECTED="true"
+    else
+        echo "No existing protected data disk found, creating new one..."
+        DATA_DISK_NAME=llama-data-${SUFFIX}
+        if [ "$DISK_PERSISTENT" = "false" ]; then
+            AUTO_DELETE="yes"
+            PROTECTED="false"
+        else
+            AUTO_DELETE="no"
+            PROTECTED="true"
+        fi
+        gcloud compute disks create $DATA_DISK_NAME \
+            --description="Data disk" \
+            --type=$DATA_DISK_TYPE \
+            --size=$DATA_DISK_SIZE \
+            --labels=protected=${PROTECTED},mode=rw,fs=ext4,boot=false \
+            --quiet
     fi
-    gcloud compute disks create $DATA_DISK_NAME \
-        --description="Data disk" \
-        --type=$DATA_DISK_TYPE \
-        --size=$DATA_DISK_SIZE \
-        --labels=protected=${PROTECTED},mode=rw,fs=ext4,boot=false \
-        --quiet
+
     GCLOUD_OPTS="${GCLOUD_OPTS} \
         --disk=auto-delete=${AUTO_DELETE},boot=no,name=${DATA_DISK_NAME},mode=rw"
 fi
