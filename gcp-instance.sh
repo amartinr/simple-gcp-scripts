@@ -1,29 +1,32 @@
 #!/bin/bash
 if [[ -f include/param.sh ]]; then
     . include/param.sh
-else
-    DATA_DISK_TYPE="none"
-    DATA_DISK_SIZE=30
-    MACHINE_TYPE="e2-micro"
 fi
 
 SUFFIX=$(head -c2 </dev/urandom | xxd -p)
 
-MACHINE_TYPE=${MACHINE_TYPE:-"e2-micro"}
 case $DATA_DISK_TYPE in
-    standard|s|std|"") DATA_DISK_TYPE="pd-standard";;
+    standard|s|std) DATA_DISK_TYPE="pd-standard";;
     balanced|b|bal) DATA_DISK_TYPE="pd-balanced";;
     ssd) DATA_DISK_TYPE="pd-ssd";;
     none) DATA_DISK_TYPE="";;
-    *) usage_fatal "invalid disk type: '$DATA_DISK_TYPE'";;
+    *)
+        if [ -n "$DATA_DISK_TYPE" ]; then
+            usage_fatal "invalid disk type: '$DATA_DISK_TYPE'"
+        fi
+    ;;
 esac
 
 case $GPU_TYPE in
-    t4|"") GPU_TYPE="nvidia-tesla-t4";;
+    t4) GPU_TYPE="nvidia-tesla-t4";;
     p4) GPU_TYPE="nvidia-tesla-p4";;
     k80) GPU_TYPE="nvidia-tesla-k80";;
     none) GPU_TYPE="";;
-    *) usage_fatal "invalid GPU type: '$GPU_TYPE'";;
+    *)
+        if [ -n "$GPU_TYPE" ]; then
+            usage_fatal "invalid GPU type: '$GPU_TYPE'"
+        fi
+    ;;
 esac
 
 if [ -n "$GPU_TYPE" ]; then
@@ -78,7 +81,7 @@ fi
 mapfile -t OUTPUT < <(gcloud beta compute instances create llama-${SUFFIX} \
     --machine-type=${MACHINE_TYPE} \
     --network-interface=network-tier=STANDARD,subnet=default \
-    --metadata-from-file=startup-script=include/startup.sh \
+    --metadata-from-file=startup-script=include/main.sh,format-disk-script=include/format-disk.sh,mount-partitions-script=include/mount-partitions.sh \
     --no-restart-on-failure \
     --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append \
     --disk=auto-delete=no,boot=yes,name=llama-boot,mode=rw \

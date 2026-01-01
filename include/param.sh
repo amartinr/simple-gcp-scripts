@@ -1,16 +1,23 @@
+# defaults
+MACHINE_TYPE="e2-micro"
+DATA_DISK_TYPE=""  # empty = no disk
+DATA_DISK_SIZE=30
+GPU_TYPE=""  # empty = no GPU
+DISK_PERSISTENT="true"
+
 usage() {
     cat <<EOF
 Usage: $0 [-m|--machine=<machine-type>] [-d|--disk[=][standard|balanced]] [-s|--disk-size=<disk size in GB>] [-g|--gpu[=][k80|t4]]
 EOF
 }
-log() { printf '%s\n' "$*"; }
-error() { log "ERROR: $*" >&2; }
-fatal() { error "$*"; exit 1; }
-usage_fatal() { error "$*"; usage >&2; exit 1; }
 
-DATA_DISK_TYPE="none"
-DATA_DISK_SIZE=30
-GPU_TYPE="none"
+log() { printf '%s\n' "$*"; }
+
+error() { log "ERROR: $*" >&2; }
+
+fatal() { error "$*"; exit 1; }
+
+usage_fatal() { error "$*"; usage >&2; exit 1; }
 
 while [ "$#" -gt 0 ]; do
     arg=$1
