@@ -39,7 +39,7 @@ if [ -n "$DATA_DISK_TYPE" ]; then
         --limit=1)
 
     if [ -n "$EXISTING_DISK" ]; then
-        echo "Found existing protected data disk: ${EXISTING_DISK}"
+        echo "Found data disk '${EXISTING_DISK}'"
         DATA_DISK_NAME=$EXISTING_DISK
         AUTO_DELETE="no"
     else
@@ -56,8 +56,7 @@ if [ -n "$DATA_DISK_TYPE" ]; then
             --description="Data disk" \
             --type=$DATA_DISK_TYPE \
             --size=$DATA_DISK_SIZE \
-            --labels=protected=${PROTECTED},mode=rw,fs=ext4,boot=false \
-            --quiet
+            --labels=protected=${PROTECTED},mode=rw,fs=ext4,boot=false
     fi
 
     GCLOUD_OPTS="${GCLOUD_OPTS} \
@@ -70,6 +69,10 @@ if [ "$MACHINE_TYPE" != "e2-micro" ]; then
         --provisioning-model=SPOT \
         --instance-termination-action=DELETE \
         --max-run-duration=4h"
+fi
+
+if [ -n "$DATA_DISK_NAME" ]; then
+        echo "Attaching data disk '${DATA_DISK_NAME}' to instance 'llama-${SUFFIX}'..."
 fi
 
 mapfile -t OUTPUT < <(gcloud beta compute instances create llama-${SUFFIX} \
